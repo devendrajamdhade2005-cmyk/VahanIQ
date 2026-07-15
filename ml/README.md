@@ -215,9 +215,137 @@ To modify the generation:
 After generating synthetic data:
 
 1. **Train ML Model**: `python scripts/train_prediction_model.py`
-2. **Prepare RAG Index**: `python scripts/prepare_rag_index.py`
-3. **Test APIs**: Use Postman/Swagger with generated data
-4. **Build Frontend**: Connect to populated backend
+2. **Test Predictions**: `python scripts/test_predictions.py`
+3. **Prepare RAG Index**: `python scripts/prepare_rag_index.py`
+4. **Test APIs**: Use Postman/Swagger with generated data
+5. **Build Frontend**: Connect to populated backend
+
+## ML Model Training
+
+### Quick Start
+
+```bash
+# From ml/scripts directory
+python train_prediction_model.py
+```
+
+### What It Does
+
+The training script:
+1. **Loads sensor data** from database
+2. **Labels failures** based on thresholds:
+   - Brake: pad thickness < 2.5mm
+   - Engine: coolant temp > 100°C
+   - Fuel: trim values > ±10%
+   - Electrical: battery voltage < 12.5V
+   - Normal: everything else
+3. **Trains XGBoost** classifier
+4. **Creates SHAP explainer** for interpretability
+5. **Saves model** to `ml/models/`
+
+### Model Architecture
+
+**Algorithm**: XGBoost (Gradient Boosting)
+- Multi-class classification (5 classes)
+- 20 sensor features
+- Handles missing values
+- Built-in feature importance
+
+**Features Used**:
+- Engine: rpm, speed, load, temperatures, MAF
+- Fuel: pressure, level, trim values
+- Brakes: pad thickness (4 wheels), fluid pressure
+- Electrical: battery voltage, O2 sensor
+- Other: transmission temp, mileage
+
+**Output**:
+- Failure type (normal/brake/engine/fuel/electrical)
+- Probability (0-1)
+- SHAP values for explainability
+- Top contributing features
+
+### Explainability (SHAP)
+
+SHAP (SHapley Additive exPlanations) provides:
+- **Feature importance**: Which sensors matter most
+- **Individual predictions**: Why this specific prediction
+- **Plain language**: Human-readable explanations
+
+Example:
+```
+"Brake failure risk is high (85% probability). 
+Front brake pads are critically worn (FL: 1.8mm, FR: 2.1mm). 
+Replace brake pads immediately."
+```
+
+### Testing Predictions
+
+After training, test the model:
+
+```bash
+python test_predictions.py
+```
+
+This will:
+- Load real sensor data from database
+- Make predictions for 10 vehicles
+- Show failure type, probability, severity
+- Display plain-language explanations
+- Test edge cases (critical scenarios)
+
+### Model Files
+
+After training, these files are created in `ml/models/`:
+
+- `failure_prediction_model.pkl` - Trained XGBoost model
+- `scaler.pkl` - Feature scaler (StandardScaler)
+- `shap_explainer.pkl` - SHAP explainer
+- `feature_names.pkl` - Feature list
+- `model_metadata.pkl` - Training metadata
+
+### Integration with Backend
+
+The model is loaded automatically by the backend:
+
+```python
+from app.ml.predictor import predict_failure
+
+# Make prediction
+sensor_data = {
+    'rpm': 2500,
+    'coolant_temp': 95,
+    'brake_pad_thickness_fl': 2.0,
+    # ... other sensors
+}
+
+result = predict_failure(sensor_data)
+# Returns: failure_type, probability, explanation, etc.
+```
+
+### Expected Performance
+
+With synthetic data:
+- **Accuracy**: ~85-95% (depends on failure distribution)
+- **Precision**: High for critical failures (brake, engine)
+- **Recall**: Balanced across all failure types
+
+Real-world performance will vary based on:
+- Data quality
+- Sensor calibration
+- Failure label accuracy
+
+### Retraining
+
+To retrain with new data:
+
+1. Generate/collect more sensor readings
+2. Run training script again
+3. Model automatically reloads in backend (on restart)
+
+For production:
+- Retrain monthly with mechanic feedback
+- Use actual failure outcomes as labels
+- A/B test new models before deployment
 
 ## Data Sources (Future)
 
