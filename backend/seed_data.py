@@ -1,15 +1,17 @@
 """
 Seed initial data for development/testing
-Creates admin user, sample showrooms, and test users
+Creates admin user, sample showrooms, test users, and sample vehicles
 """
 
 import asyncio
 from sqlalchemy import select
+from datetime import datetime, timedelta
 
 from app.core.database import async_session_maker
 from app.core.security import get_password_hash
 from app.models.user import User, UserRole
 from app.models.showroom import Showroom
+from app.models.vehicle import Vehicle, VehicleStatus
 
 
 async def seed_data():
@@ -121,6 +123,47 @@ async def seed_data():
         print("✅ Created vehicle owner: owner@example.com / owner123")
         
         await db.commit()
+        await db.refresh(owner1)
+        
+        # Create sample vehicles
+        vehicle1 = Vehicle(
+            registration_number="MH01AB1234",
+            vin="MAT123456789ABCDE",
+            make="Tata",
+            model="Nexon",
+            year=2022,
+            variant="XZ+ Diesel",
+            color="Flame Red",
+            owner_id=owner1.id,
+            home_showroom_id=showroom1.id,
+            current_mileage=15000,
+            health_status=VehicleStatus.HEALTHY,
+            health_score=92.5,
+            last_service_date=datetime.utcnow() - timedelta(days=30),
+            next_service_due=datetime.utcnow() + timedelta(days=60)
+        )
+        db.add(vehicle1)
+        
+        vehicle2 = Vehicle(
+            registration_number="MH02CD5678",
+            vin="MAT987654321FGHIJ",
+            make="Tata",
+            model="Harrier",
+            year=2021,
+            variant="XZ Diesel",
+            color="Royale Blue",
+            owner_id=owner1.id,
+            home_showroom_id=showroom1.id,
+            current_mileage=42000,
+            health_status=VehicleStatus.WATCH,
+            health_score=78.3,
+            last_service_date=datetime.utcnow() - timedelta(days=90),
+            next_service_due=datetime.utcnow() + timedelta(days=30)
+        )
+        db.add(vehicle2)
+        
+        await db.commit()
+        print("✅ Created 2 sample vehicles")
         
         print("\n✨ Seed data created successfully!")
         print("\n📋 Login credentials:")
@@ -128,6 +171,11 @@ async def seed_data():
         print("   Showroom Manager: manager.mumbai@autosense.ai / manager123")
         print("   Mechanic:         mechanic.mumbai@autosense.ai / mechanic123")
         print("   Vehicle Owner:    owner@example.com / owner123")
+        print("\n🚗 Sample vehicles:")
+        print(f"   Vehicle 1: {vehicle1.registration_number} - {vehicle1.make} {vehicle1.model}")
+        print(f"   Vehicle 2: {vehicle2.registration_number} - {vehicle2.make} {vehicle2.model}")
+        print("\n💡 Next step: Generate more test data with:")
+        print("   python ../ml/scripts/generate_synthetic_data.py")
 
 
 async def reset_data():
