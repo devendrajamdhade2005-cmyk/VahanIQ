@@ -51,3 +51,11 @@ class VehicleResponse(VehicleBase):
     
     class Config:
         from_attributes = True
+
+
+class VehicleDetailResponse(VehicleResponse):
+    """Extended vehicle response with related data"""
+    owner_name: Optional[str] = None
+    showroom_name: Optional[str] = None
+    recent_diagnoses_count: int = 0
+    active_repair_cases_count: int = 0

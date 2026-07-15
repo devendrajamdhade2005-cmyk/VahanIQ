@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api.routes import auth, users, vehicles, showrooms, diagnoses, repairs, appointments
+from app.api.routes import auth, users, vehicles, showrooms, diagnoses, repairs, appointments, sensors
 
 
 @asynccontextmanager
@@ -80,6 +80,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(showrooms.router, prefix="/api/showrooms", tags=["Showrooms"])
 app.include_router(vehicles.router, prefix="/api/vehicles", tags=["Vehicles"])
+app.include_router(sensors.router, prefix="/api/vehicles", tags=["Sensor Data"])
 app.include_router(diagnoses.router, prefix="/api/diagnoses", tags=["Diagnoses"])
 app.include_router(repairs.router, prefix="/api/repairs", tags=["Repairs"])
 app.include_router(appointments.router, prefix="/api/appointments", tags=["Appointments"])
