@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api.routes import auth, users, vehicles, showrooms, diagnoses, repairs, appointments, sensors
+from app.api.routes import auth, users, vehicles, showrooms, diagnoses, repairs, appointments, sensors, knowledge
 
 
 @asynccontextmanager
@@ -84,6 +84,7 @@ app.include_router(sensors.router, prefix="/api/vehicles", tags=["Sensor Data"])
 app.include_router(diagnoses.router, prefix="/api/diagnoses", tags=["Diagnoses"])
 app.include_router(repairs.router, prefix="/api/repairs", tags=["Repairs"])
 app.include_router(appointments.router, prefix="/api/appointments", tags=["Appointments"])
+app.include_router(knowledge.router, prefix="/api", tags=["Knowledge Base & RAG"])
 
 
 # Global exception handler

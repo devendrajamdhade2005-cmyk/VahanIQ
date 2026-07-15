@@ -355,3 +355,171 @@ When ready for production:
 - **Repair Manuals**: Operation CHARM database
 - **Historical Repairs**: Actual service center records
 - **Expert Labels**: Mechanic-verified failure classifications
+
+
+---
+
+## Knowledge Base and RAG Pipeline
+
+The platform uses a Retrieval-Augmented Generation (RAG) system for contextual repair guidance.
+
+### Setup Knowledge Base
+
+1. **Load Sample Repair Manuals**:
+```bash
+python ml/scripts/load_knowledge_base.py
+```
+
+This will:
+- Load 5 comprehensive repair manuals into database
+- Process documents into 500-word chunks with 50-word overlap
+- Generate embeddings using Sentence-BERT
+- Build FAISS vector index for semantic search
+- Test retrieval with sample queries
+
+### Sample Manuals Included
+
+1. **Tata Nexon Brake System Maintenance** - Complete brake service guide
+2. **Engine Cooling System Diagnosis** - Overheating troubleshooting
+3. **Fuel System Troubleshooting** - Fuel trim analysis and EVAP
+4. **Electrical System Diagnosis** - Battery and charging systems
+5. **General Maintenance Schedule** - Periodic service intervals
+
+### Vector Store
+
+- **Model**: `all-MiniLM-L6-v2` (384 dimensions)
+- **Index**: FAISS L2 distance
+- **Storage**: `backend/app/rag/indices/`
+- **Search Speed**: 15-50ms per query
+- **Persistent**: Index saved to disk after build
+
+### Usage Examples
+
+```python
+from app.rag.retrieval_service import get_retrieval_service
+
+# Initialize service
+retrieval_service = get_retrieval_service()
+await retrieval_service.initialize()
+
+# Search knowledge base
+results = await retrieval_service.search_knowledge(
+    query="brake pad replacement Tata Nexon",
+    top_k=5,
+    vehicle_make="Tata",
+    vehicle_model="Nexon"
+)
+
+# Find similar cases
+cases = await retrieval_service.find_similar_cases(
+    db=db,
+    diagnosis_text="Squealing noise during braking",
+    failure_type="brake",
+    vehicle_make="Tata",
+    top_k=5
+)
+
+# Get comprehensive repair context
+context = await retrieval_service.get_repair_context(
+    db=db,
+    failure_type="brake",
+    diagnosis_description="Brake warning light, squealing noise",
+    vehicle_make="Tata",
+    vehicle_model="Nexon",
+    dtc_codes=["C0035", "C0040"]
+)
+```
+
+### API Endpoints
+
+- `POST /api/knowledge/search` - Semantic search over manuals
+- `POST /api/knowledge/similar-cases` - Find similar repair cases
+- `POST /api/knowledge/repair-context` - Combined knowledge + cases
+- `GET /api/knowledge/stats` - Vector store statistics
+- `POST /api/knowledge/index/rebuild` - Rebuild index (admin only)
+- `GET /api/knowledge/documents` - List knowledge documents
+- `POST /api/knowledge/documents` - Add new document (admin)
+
+### Adding Custom Manuals
+
+1. **Via API** (Recommended):
+```bash
+curl -X POST "http://localhost:8000/api/knowledge/documents" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Tata Punch Suspension Guide",
+    "doc_type": "manual",
+    "category": "suspension",
+    "content": "Your manual content here...",
+    "applicable_makes": "Tata",
+    "applicable_models": "Punch",
+    "year_from": 2021,
+    "year_to": 2024,
+    "is_active": true,
+    "is_verified": true
+  }'
+```
+
+2. **Via Python Script**:
+```python
+# Add to ml/data/sample_repair_manuals.py
+REPAIR_MANUALS.append({
+    "title": "Your Manual Title",
+    "doc_type": "manual",
+    "category": "brake",
+    "applicable_makes": "Tata",
+    "applicable_models": "Nexon,Harrier",
+    "year_from": 2018,
+    "year_to": 2024,
+    "content": """
+    Your detailed manual content here...
+    """
+})
+```
+
+Then reload:
+```bash
+python ml/scripts/load_knowledge_base.py
+```
+
+### Performance
+
+**Embedding Generation**:
+- Single text: ~10ms
+- Batch (50 texts): ~200ms
+- Model size: ~80MB
+
+**Search Performance**:
+- Query embedding: ~10ms
+- FAISS search (1000 docs): ~1-5ms
+- Post-filtering: ~1-2ms
+- Total latency: **15-50ms**
+
+**Storage**:
+- 5 manuals → 45 chunks
+- FAISS index: ~100 KB
+- Metadata: ~50 KB
+
+### Verification
+
+After loading, verify the system:
+
+```bash
+# Check vector store stats
+curl -X GET "http://localhost:8000/api/knowledge/stats" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Test search
+curl -X POST "http://localhost:8000/api/knowledge/search" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "brake pad replacement procedure",
+    "top_k": 3,
+    "vehicle_make": "Tata",
+    "vehicle_model": "Nexon"
+  }'
+```
+
+See `docs/RAG_PIPELINE.md` for comprehensive documentation.
