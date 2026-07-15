@@ -4,11 +4,42 @@ AI-powered predictive maintenance platform for vehicles with explainable diagnos
 
 ## 🚀 Features
 
-- **Four Role-Based Dashboards**: Admin, Showroom Manager, Mechanic, Car Owner
-- **AI-Powered Diagnostics**: XGBoost + SHAP for explainable failure predictions
-- **RAG-Based Repair Guidance**: Context-aware repair instructions from technical manuals
-- **Real-Time Monitoring**: Live alerts and job status updates
-- **Continuous Learning**: Mechanic feedback loop for model improvement
+### 🤖 AI Intelligence (Complete Pipeline)
+- **ML Predictions**: XGBoost multi-class failure classifier (5 types: normal, brake, engine, fuel, electrical)
+- **SHAP Explainability**: Feature importance with plain-language explanations
+- **RAG Context Retrieval**: FAISS semantic search over 5+ repair manuals + similar cases
+- **LLM Repair Guides**: Claude/GPT-generated step-by-step repair instructions
+- **Complete Diagnosis Flow**: Sensor Data → ML → RAG → LLM (3-6 second latency)
+
+### 👥 Four Role-Based Dashboards
+- **Admin**: Platform-wide monitoring, user management, analytics
+- **Showroom Manager**: Multi-vehicle oversight, mechanic assignments, revenue tracking
+- **Mechanic**: AI-powered diagnosis, repair guides, case management
+- **Car Owner**: Vehicle health, service history, cost estimates
+
+### 🔧 Vehicle Management
+- **OBD-II Integration**: 25+ sensor parameters (RPM, temps, brake wear, battery, fuel trim)
+- **Health Scoring**: Algorithm-based status (Healthy/Watch/Warning/Critical)
+- **Sensor Time-Series**: Historical data tracking and analytics
+- **DTC Code Mapping**: Diagnostic trouble code interpretation
+
+### 📚 Knowledge Base & RAG
+- **Semantic Search**: 15-50ms latency over repair manuals
+- **Similar Case Finder**: Past repair retrieval with similarity scoring
+- **Manual Processing**: 500-word chunks, 50-word overlap, sentence-aware
+- **Vehicle Filtering**: Make/model/year specific content
+
+### 🔐 Security & Access Control
+- **JWT Authentication**: Access + refresh tokens
+- **RBAC System**: 4 roles with granular permissions
+- **Multi-Tenant Isolation**: Showroom-scoped data access
+- **Audit Logging**: Security events and user actions
+
+### 📊 Analytics & Reporting
+- **Diagnosis Statistics**: Failure type distribution, confidence metrics
+- **Cost Tracking**: Parts, labor, total repair costs
+- **Performance Metrics**: ML accuracy, mechanic feedback
+- **Real-Time Monitoring**: Live alerts and status updates
 
 ## 📁 Project Structure
 

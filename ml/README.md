@@ -523,3 +523,200 @@ curl -X POST "http://localhost:8000/api/knowledge/search" \
 ```
 
 See `docs/RAG_PIPELINE.md` for comprehensive documentation.
+
+
+---
+
+## LLM Repair Guide Generation
+
+The platform integrates Large Language Models (Claude/GPT) to generate actionable repair guides from ML predictions and RAG context.
+
+### Setup
+
+1. **Choose LLM Provider** - Add to `backend/.env`:
+
+```bash
+# Anthropic Claude (Recommended)
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
+LLM_MODEL=claude-3-sonnet-20240229
+
+# OR OpenAI GPT
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-your-key-here
+LLM_MODEL=gpt-4
+```
+
+2. **Test Complete Pipeline**:
+
+```bash
+python ml/scripts/test_complete_ai_pipeline.py
+```
+
+This tests the full flow: **Sensor Data → ML Prediction → RAG Context → LLM Guide**
+
+### LLM Integration Flow
+
+```
+1. ML Prediction (XGBoost)
+   ↓
+   failure_type: "brake"
+   probability: 0.85
+   severity: "critical"
+   explanation: "Front brake pads critically worn..."
+
+2. RAG Context Retrieval (FAISS)
+   ↓
+   knowledge_articles: [3 repair manuals]
+   similar_cases: [2 past repairs]
+
+3. LLM Guide Generation (Claude/GPT)
+   ↓
+   - Diagnosis summary (plain language)
+   - Root cause analysis
+   - Step-by-step repair procedure
+   - Required parts with costs
+   - Safety precautions
+   - Quality checks
+   - Estimated time and cost
+```
+
+### Generated Output Example
+
+```json
+{
+  "diagnosis_summary": "Front brake pads worn to critical level requiring immediate replacement",
+  "root_cause": "Normal brake pad wear after 45,000 km of usage",
+  "urgency": "immediate",
+  "repair_steps": [
+    {
+      "step_number": 1,
+      "title": "Vehicle Preparation and Safety",
+      "description": "Park vehicle on level surface, engage parking brake, place wheel chocks...",
+      "safety_warning": "Never work under vehicle supported only by jack",
+      "estimated_time_minutes": 10
+    },
+    {
+      "step_number": 2,
+      "title": "Remove Wheel and Access Caliper",
+      "description": "Loosen lug nuts with 19mm socket, lift vehicle, remove wheel...",
+      "estimated_time_minutes": 15
+    }
+  ],
+  "required_parts": [
+    {
+      "part_name": "Front brake pad set",
+      "part_number": "5801517959",
+      "quantity": 1,
+      "estimated_cost_inr": 2500,
+      "priority": "critical"
+    },
+    {
+      "part_name": "Brake cleaner",
+      "quantity": 1,
+      "estimated_cost_inr": 200,
+      "priority": "recommended"
+    }
+  ],
+  "required_tools": ["19mm socket", "12mm hex key", "C-clamp", "Jack stands", "Torque wrench"],
+  "estimated_labor_hours": 1.5,
+  "estimated_total_cost_inr": 4200,
+  "safety_precautions": [
+    "Wear safety glasses and gloves",
+    "Never compress caliper piston with bleeder valve closed on ABS systems",
+    "Ensure vehicle is securely supported before working"
+  ],
+  "quality_checks": [
+    "Brake pedal should be firm after pumping",
+    "No leaks at caliper or brake lines",
+    "Pads seated correctly with anti-squeal shims"
+  ],
+  "common_mistakes": [
+    "Forgetting to compress caliper piston before installing new pads",
+    "Not cleaning caliper slide pins causing uneven wear",
+    "Over-torquing caliper bolts"
+  ]
+}
+```
+
+### API Usage
+
+**Create Diagnosis with AI Guide**:
+```bash
+curl -X POST "http://localhost:8000/api/diagnoses/" \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "vehicle_id": 1,
+    "notes": "Customer reports brake squealing",
+    "generate_repair_guide": true
+  }'
+```
+
+**Regenerate Guide with Custom Notes**:
+```bash
+curl -X POST "http://localhost:8000/api/diagnoses/1/regenerate-guide" \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"custom_notes": "Customer prefers premium brake pads"}'
+```
+
+### Model Comparison
+
+| Model | Speed | Quality | Cost/1K | Best For |
+|-------|-------|---------|---------|----------|
+| Claude Sonnet | Fast | Excellent | $0.009 | **Recommended** - Best balance |
+| Claude Opus | Slow | Best | $0.045 | Complex cases requiring deep reasoning |
+| Claude Haiku | Very Fast | Good | $0.003 | High volume, simpler repairs |
+| GPT-4 | Medium | Excellent | $0.045 | Alternative to Claude Opus |
+| GPT-3.5-turbo | Fast | Good | $0.003 | Budget-friendly option |
+
+### Performance
+
+- **ML Prediction**: 50-100ms
+- **RAG Retrieval**: 50-100ms  
+- **LLM Generation**: 2-5 seconds
+- **Total Diagnosis**: ~3-6 seconds
+
+### Cost Estimation
+
+**Monthly Cost (1000 diagnoses)**:
+- Claude Sonnet: ~$9/month
+- GPT-4: ~$45/month
+- GPT-3.5-turbo: ~$3/month
+
+### Features
+
+✅ Step-by-step repair procedures  
+✅ Parts list with Indian pricing (₹)  
+✅ Labor time estimates  
+✅ Safety precautions  
+✅ Quality checkpoints  
+✅ Common mistakes to avoid  
+✅ Customer-friendly summaries  
+✅ Cost breakdowns  
+✅ Urgency assessment  
+
+### Troubleshooting
+
+**No API key error**:
+```bash
+# Add to backend/.env
+ANTHROPIC_API_KEY=sk-ant-api03-...
+# or
+OPENAI_API_KEY=sk-...
+```
+
+**LLM generation fails**:
+- Check API key validity
+- Verify internet connection
+- Check API rate limits
+- System continues with ML + RAG only (graceful degradation)
+
+**Guide quality issues**:
+- Use more capable model (Opus, GPT-4)
+- Add more detailed mechanic notes
+- Ensure RAG context is relevant
+- Provide DTC codes for better context
+
+See `docs/LLM_INTEGRATION.md` for complete documentation.
