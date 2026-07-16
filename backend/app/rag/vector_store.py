@@ -6,9 +6,15 @@ import os
 import pickle
 import logging
 from typing import List, Tuple, Optional, Dict, Any
-import numpy as np
-import faiss
-from sentence_transformers import SentenceTransformer
+
+try:
+    import numpy as np
+    import faiss
+    from sentence_transformers import SentenceTransformer
+    RAG_AVAILABLE = True
+except ImportError:
+    RAG_AVAILABLE = False
+    print("⚠️  RAG libraries not available. Using mock vector store.")
 
 from app.core.config import settings
 
@@ -47,6 +53,13 @@ class VectorStore:
     
     def initialize(self):
         """Load or create embedding model and FAISS index"""
+        if not RAG_AVAILABLE:
+            logger.warning("RAG libraries not available. Using mock vector store.")
+            self.embedding_model = None
+            self.index = None
+            self.dimension = 384  # Mock dimension
+            return
+            
         try:
             # Load sentence transformer model
             logger.info(f"Loading embedding model: {self.model_name}")

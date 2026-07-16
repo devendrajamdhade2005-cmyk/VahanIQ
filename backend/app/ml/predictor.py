@@ -2,11 +2,18 @@
 ML Prediction Service - Load model and make predictions
 """
 
-import joblib
-import numpy as np
+try:
+    import joblib
+    import numpy as np
+    ML_AVAILABLE = True
+except ImportError:
+    ML_AVAILABLE = False
+    print("⚠️  ML libraries not available. Using mock predictor.")
+
 from pathlib import Path
 from typing import Dict, List, Optional
 import json
+import random
 
 class FailurePredictor:
     """
@@ -33,6 +40,31 @@ class FailurePredictor:
     
     def load_model(self, model_dir: str = "ml/models"):
         """Load trained model and related artifacts"""
+        if not ML_AVAILABLE:
+            print("⚠️  Using mock ML predictor (ML libraries not installed)")
+            self._model = "mock"
+            self._scaler = "mock"
+            self._explainer = "mock"
+            self._feature_names = [
+                "rpm", "speed", "engine_load", "coolant_temp", "intake_temp",
+                "throttle_position", "maf", "fuel_pressure", "fuel_level",
+                "fuel_trim_short", "fuel_trim_long", "o2_voltage",
+                "brake_pad_thickness_fl", "brake_pad_thickness_fr",
+                "brake_pad_thickness_rl", "brake_pad_thickness_rr",
+                "brake_fluid_pressure", "battery_voltage", "transmission_temp", "mileage"
+            ]
+            self._metadata = {
+                "failure_types": {
+                    "0": "normal",
+                    "1": "brake",
+                    "2": "engine",
+                    "3": "fuel",
+                    "4": "electrical"
+                },
+                "trained_at": "mock_model"
+            }
+            return
+            
         model_path = Path(model_dir)
         
         if not model_path.exists():
@@ -61,6 +93,10 @@ class FailurePredictor:
         Returns:
             Dictionary with prediction, probability, and explanation
         """
+        # Mock prediction if ML not available
+        if not ML_AVAILABLE or self._model == "mock":
+            return self._mock_predict(sensor_data)
+        
         # Prepare features (in correct order)
         features = np.array([[
             sensor_data.get(feature, 0) for feature in self._feature_names
@@ -103,6 +139,82 @@ class FailurePredictor:
             'top_features': top_features,
             'severity': self._calculate_severity(probabilities[prediction_id]),
             'model_version': self._metadata.get('trained_at', 'unknown')
+        }
+    
+    def _mock_predict(self, sensor_data: Dict) -> Dict:
+        """Mock prediction when ML libraries not available"""
+        # Simple rule-based logic
+        failure_types = self._metadata['failure_types']
+        
+        # Check brake pads
+        brake_fl = sensor_data.get('brake_pad_thickness_fl', 5.0)
+        brake_fr = sensor_data.get('brake_pad_thickness_fr', 5.0)
+        if brake_fl < 2.5 or brake_fr < 2.5:
+            failure_type = "brake"
+            probability = 0.85
+        # Check coolant temp
+        elif sensor_data.get('coolant_temp', 90) > 105:
+            failure_type = "engine"
+            probability = 0.75
+        # Check battery voltage
+        elif sensor_data.get('battery_voltage', 14) < 12.0:
+            failure_type = "electrical"
+            probability = 0.70
+        # Check fuel trim
+        elif abs(sensor_data.get('fuel_trim_short', 0)) > 15:
+            failure_type = "fuel"
+            probability = 0.65
+        else:
+            failure_type = "normal"
+            probability = 0.90
+        
+        # Generate mock top features
+        top_features = []
+        if failure_type == "brake":
+            top_features = [
+                {"feature": "brake_pad_thickness_fl", "contribution": -0.4, "impact": "negative"},
+                {"feature": "brake_pad_thickness_fr", "contribution": -0.3, "impact": "negative"},
+                {"feature": "mileage", "contribution": 0.2, "impact": "positive"}
+            ]
+        elif failure_type == "engine":
+            top_features = [
+                {"feature": "coolant_temp", "contribution": 0.5, "impact": "positive"},
+                {"feature": "engine_load", "contribution": 0.3, "impact": "positive"}
+            ]
+        elif failure_type == "electrical":
+            top_features = [
+                {"feature": "battery_voltage", "contribution": -0.6, "impact": "negative"}
+            ]
+        elif failure_type == "fuel":
+            top_features = [
+                {"feature": "fuel_trim_short", "contribution": 0.4, "impact": "positive"},
+                {"feature": "o2_voltage", "contribution": 0.3, "impact": "positive"}
+            ]
+        
+        explanation = self._generate_explanation(
+            failure_type,
+            probability,
+            top_features,
+            sensor_data
+        )
+        
+        # Generate all probabilities
+        all_probabilities = {ft: 0.05 for ft in failure_types.values()}
+        all_probabilities[failure_type] = probability
+        
+        # Normalize to sum to 1.0
+        total = sum(all_probabilities.values())
+        all_probabilities = {k: v/total for k, v in all_probabilities.items()}
+        
+        return {
+            'failure_type': failure_type,
+            'failure_type_id': list(failure_types.values()).index(failure_type),
+            'probability': probability,
+            'all_probabilities': all_probabilities,
+            'explanation': explanation,
+            'top_features': top_features,
+            'severity': self._calculate_severity(probability),
+            'model_version': 'mock_v1.0'
         }
     
     def _get_top_features(self, shap_values, prediction_id, top_n=5):

@@ -3,6 +3,8 @@ Authentication schemas
 """
 
 from pydantic import BaseModel, EmailStr, Field
+from typing import Optional
+from datetime import datetime
 
 
 class LoginRequest(BaseModel):
@@ -11,15 +13,23 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=1)
 
 
+class UserInfo(BaseModel):
+    """User information in login response"""
+    id: int
+    email: str
+    full_name: str
+    role: str
+    showroom_id: Optional[int] = None
+    is_active: bool
+    created_at: datetime
+
+
 class LoginResponse(BaseModel):
     """Login response schema"""
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
-    user_id: int
-    email: str
-    role: str
-    full_name: str
+    user: UserInfo
 
 
 class RefreshTokenRequest(BaseModel):

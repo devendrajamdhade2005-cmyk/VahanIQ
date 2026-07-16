@@ -32,7 +32,7 @@ router = APIRouter()
 async def create_diagnosis(
     request: DiagnosisCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_mechanic())
+    current_user: User = Depends(require_mechanic)
 ):
     """
     Create AI-powered diagnosis
@@ -214,7 +214,7 @@ async def update_diagnosis(
     diagnosis_id: int,
     update: DiagnosisUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_mechanic())
+    current_user: User = Depends(require_mechanic)
 ):
     """
     Update diagnosis
@@ -249,7 +249,7 @@ async def regenerate_repair_guide(
     diagnosis_id: int,
     request: RegenerateGuideRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_mechanic())
+    current_user: User = Depends(require_mechanic)
 ):
     """
     Regenerate repair guide for existing diagnosis

@@ -106,10 +106,15 @@ class AuthService:
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
-            "user_id": user.id,
-            "email": user.email,
-            "role": user.role.value,
-            "full_name": user.full_name
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "full_name": user.full_name,
+                "role": user.role.value,
+                "showroom_id": user.showroom_id,
+                "is_active": user.is_active,
+                "created_at": user.created_at
+            }
         }
     
     @staticmethod

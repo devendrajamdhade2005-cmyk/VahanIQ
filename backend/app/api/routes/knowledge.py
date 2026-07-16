@@ -173,7 +173,7 @@ async def get_index_stats(
 async def rebuild_index(
     request: IndexRebuildRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_admin())
+    current_user: User = Depends(require_admin)
 ):
     """
     Rebuild vector index from knowledge base
@@ -257,7 +257,7 @@ async def get_document(
 async def create_document(
     document: KnowledgeDocumentCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_admin())
+    current_user: User = Depends(require_admin)
 ):
     """
     Create knowledge document
@@ -278,7 +278,7 @@ async def update_document(
     document_id: int,
     document: KnowledgeDocumentUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_admin())
+    current_user: User = Depends(require_admin)
 ):
     """
     Update knowledge document
@@ -310,7 +310,7 @@ async def update_document(
 async def delete_document(
     document_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_admin())
+    current_user: User = Depends(require_admin)
 ):
     """
     Delete knowledge document

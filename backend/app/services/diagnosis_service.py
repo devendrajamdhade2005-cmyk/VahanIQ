@@ -12,9 +12,9 @@ from app.models.vehicle import Vehicle
 from app.models.sensor import SensorReading
 from app.models.diagnosis import Diagnosis
 from app.models.user import User
-from app.ml.predictor import get_predictor
-from app.rag.retrieval_service import get_retrieval_service
-from app.services.llm_service import get_llm_service
+from app.ml.predictor import FailurePredictor
+from app.rag.retrieval_service import RetrievalService
+from app.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +27,9 @@ class DiagnosisService:
     
     def __init__(self):
         """Initialize diagnosis service"""
-        self.ml_predictor = get_predictor()
-        self.rag_service = get_retrieval_service()
-        self.llm_service = get_llm_service()
+        self.ml_predictor = FailurePredictor()
+        self.rag_service = RetrievalService()
+        self.llm_service = LLMService()
     
     async def create_diagnosis(
         self,
