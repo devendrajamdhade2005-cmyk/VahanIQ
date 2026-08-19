@@ -2,7 +2,7 @@
 
 AI-powered predictive maintenance platform for vehicles with explainable diagnostics and automated repair guidance.
 
-## 🚀 Features
+##  Features
 
 ### 🤖 AI Intelligence (Complete Pipeline)
 - **ML Predictions**: XGBoost multi-class failure classifier (5 types: normal, brake, engine, fuel, electrical)
